@@ -19,6 +19,11 @@ type Rule = {
   github_repo: Repo | null;
 };
 
+const MATCH_MODES = ["explicit_tag", "contains", "all_tokens", "fuzzy"] as const;
+type MatchMode = (typeof MATCH_MODES)[number];
+const ACTION_MODES = ["auto_tick", "suggest_only"] as const;
+type ActionMode = (typeof ACTION_MODES)[number];
+
 export function GithubTaskRuleForm({
   taskId,
   taskItemId,
@@ -32,8 +37,8 @@ export function GithubTaskRuleForm({
 }) {
   const [repoId, setRepoId] = useState("");
   const [targetPhrase, setTargetPhrase] = useState("");
-  const [matchMode, setMatchMode] = useState<"contains" | "all_tokens" | "fuzzy" | "explicit_tag">("fuzzy");
-  const [actionMode, setActionMode] = useState<"auto_tick" | "suggest_only">("auto_tick");
+  const [matchMode, setMatchMode] = useState<MatchMode>("fuzzy");
+  const [actionMode, setActionMode] = useState<ActionMode>("auto_tick");
   const [minScore, setMinScore] = useState(80);
   const [saving, setSaving] = useState(false);
   const router = useRouter();
@@ -107,7 +112,10 @@ export function GithubTaskRuleForm({
                 Match:{" "}
                 <select
                   value={matchMode}
-                  onChange={(e) => setMatchMode(e.target.value as Rule["match_mode"])}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (MATCH_MODES.includes(v as MatchMode)) setMatchMode(v as MatchMode);
+                  }}
                   className="ml-1 px-2 py-1 border rounded bg-white dark:bg-neutral-900"
                 >
                   <option value="explicit_tag">Tag #todo:slug</option>
@@ -120,7 +128,10 @@ export function GithubTaskRuleForm({
                 Ação:{" "}
                 <select
                   value={actionMode}
-                  onChange={(e) => setActionMode(e.target.value as Rule["action_mode"])}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (ACTION_MODES.includes(v as ActionMode)) setActionMode(v as ActionMode);
+                  }}
                   className="ml-1 px-2 py-1 border rounded bg-white dark:bg-neutral-900"
                 >
                   <option value="auto_tick">Auto-tick</option>
