@@ -1,0 +1,6 @@
+{
+  "name": "test-push",
+  "version": "1",
+  "runtime": "deno",
+  "entrypoint": "index.ts"
+}

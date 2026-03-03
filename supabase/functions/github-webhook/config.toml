@@ -1,0 +1,6 @@
+{
+  "name": "github-webhook",
+  "version": "1",
+  "runtime": "deno",
+  "entrypoint": "index.ts"
+}
