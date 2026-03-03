@@ -3,12 +3,42 @@ import Link from "next/link";
 import { SmartLists } from "@/components/dashboard/SmartLists";
 import { QuickAddForm } from "@/components/quick-add/QuickAddForm";
 
+type DashboardTask = {
+  id: string;
+  title: string;
+  status: string;
+  due_at: string | null;
+  priority: string;
+  project_id: string | null;
+  project: { id: string; name: string; color: string } | null;
+};
+
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const { data: tasks } = await supabase
+  const { data } = await supabase
     .from("tasks")
     .select("id, title, status, due_at, priority, project_id, project:projects(id, name, color)")
     .order("due_at", { nullsFirst: false });
+
+  const raw = (data ?? []) as Array<{
+    id: string;
+    title: string;
+    status: string;
+    due_at: string | null;
+    priority: string;
+    project_id: string | null;
+    project: { id: string; name: string; color: string } | { id: string; name: string; color: string }[] | null;
+  }>;
+
+  const tasks: DashboardTask[] = raw.map((t) => ({
+    id: t.id,
+    title: t.title,
+    status: t.status,
+    due_at: t.due_at,
+    priority: t.priority,
+    project_id: t.project_id,
+    project: Array.isArray(t.project) ? t.project[0] ?? null : t.project ?? null,
+  }));
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -16,13 +46,13 @@ export default async function DashboardPage() {
         Dashboard
       </h1>
       <QuickAddForm defaultHour={9} defaultMinute={0} />
-      <SmartLists tasks={tasks ?? []} />
+      <SmartLists tasks={tasks} />
       <section>
         <h2 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-2">
           Todas as tarefas
         </h2>
         <ul className="space-y-2">
-          {(tasks ?? []).map((t) => (
+          {tasks.map((t) => (
             <li key={t.id}>
               <Link
                 href={`/dashboard/tasks/${t.id}`}
