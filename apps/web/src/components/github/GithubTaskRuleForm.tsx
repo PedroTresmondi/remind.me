@@ -16,7 +16,7 @@ type Rule = {
   min_score: number;
   action_mode: string;
   github_repo_id: string;
-  github_repo: Repo | null;
+  github_repo: { full_name: string } | null;
 };
 
 const MATCH_MODES = ["explicit_tag", "contains", "all_tokens", "fuzzy"] as const;
