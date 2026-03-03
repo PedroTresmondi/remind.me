@@ -50,7 +50,7 @@ export function ProjectsList({ initialProjects }: { initialProjects: Project[] }
           value={category}
           onChange={(e) => {
             const v = e.target.value;
-            if (PROJECT_CATEGORIES.includes(v as ProjectCategory)) setCategory(v as ProjectCategory);
+            if (v === "work" || v === "college" || v === "personal") setCategory(v);
           }}
           className="px-3 py-2 border rounded-lg bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700"
         >
