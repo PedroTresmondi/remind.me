@@ -7,9 +7,12 @@ import Link from "next/link";
 
 type Project = { id: string; name: string; category: string; color: string };
 
+const PROJECT_CATEGORIES = ["work", "college", "personal"] as const;
+type ProjectCategory = (typeof PROJECT_CATEGORIES)[number];
+
 export function ProjectsList({ initialProjects }: { initialProjects: Project[] }) {
   const [name, setName] = useState("");
-  const [category, setCategory] = useState<"work" | "college" | "personal">("personal");
+  const [category, setCategory] = useState<ProjectCategory>("personal");
   const [color, setColor] = useState("#22c55e");
   const [adding, setAdding] = useState(false);
   const router = useRouter();
@@ -45,7 +48,10 @@ export function ProjectsList({ initialProjects }: { initialProjects: Project[] }
         />
         <select
           value={category}
-          onChange={(e) => setCategory(e.target.value as Project["category"])}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (PROJECT_CATEGORIES.includes(v as ProjectCategory)) setCategory(v as ProjectCategory);
+          }}
           className="px-3 py-2 border rounded-lg bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700"
         >
           <option value="personal">Pessoal</option>
