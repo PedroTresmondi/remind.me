@@ -166,8 +166,8 @@ export function CalendarView() {
   });
 
   const selectedKey = selectedDate ? toDateOnly(selectedDate.toISOString()) : null;
-  const selectedTasks = (selectedKey && tasksByDay[selectedKey]) ?? [];
-  const selectedEvents = (selectedKey && eventsByDay[selectedKey]) ?? [];
+  const selectedTasks: TaskRow[] = selectedKey ? (tasksByDay[selectedKey] ?? []) : [];
+  const selectedEvents: EventRow[] = selectedKey ? (eventsByDay[selectedKey] ?? []) : [];
   const selectedItems = [
     ...selectedTasks.map((t) => ({ type: "task" as const, data: t })),
     ...selectedEvents.map((e) => ({ type: "event" as const, data: e })),
