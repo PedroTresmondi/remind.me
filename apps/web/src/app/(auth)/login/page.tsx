@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -10,48 +10,63 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   async function signIn(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setMessage("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      setMessage(error.message);
-      return;
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setMessage(error.message);
+        setLoading(false);
+        return;
+      }
+      setLoading(false);
+      router.refresh();
+      window.location.href = "/dashboard";
+    } catch (err) {
+      setLoading(false);
+      setMessage(err instanceof Error ? err.message : "Erro ao entrar. Tente de novo.");
     }
-    router.push("/dashboard");
-    router.refresh();
   }
 
   async function signUp(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setMessage("");
-    const { error } = await supabase.auth.signUp({ email, password });
-    setLoading(false);
-    if (error) {
-      setMessage(error.message);
-      return;
+    try {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        setMessage(error.message);
+        setLoading(false);
+        return;
+      }
+      setLoading(false);
+      setMessage("Confirme seu e-mail e faça login.");
+    } catch (err) {
+      setLoading(false);
+      setMessage(err instanceof Error ? err.message : "Erro ao cadastrar. Tente de novo.");
     }
-    setMessage("Confirme seu e-mail e faça login.");
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-sm space-y-6">
-        <h1 className="text-xl font-semibold text-teal-700 dark:text-teal-400 text-center">
+    <main className="min-h-screen flex items-center justify-center p-6 bg-[var(--background)]">
+      <div className="w-full max-w-sm card rounded-[var(--radius)] p-8 shadow-[var(--shadow-lg)] space-y-6">
+        <h1 className="text-2xl font-semibold text-teal-700 dark:text-teal-400 text-center tracking-tight">
           Remind.me
         </h1>
+        <p className="text-sm text-[var(--muted)] text-center -mt-4">
+          Organize projetos, tarefas e lembretes
+        </p>
         <form className="space-y-4" onSubmit={signIn}>
           <input
             type="email"
             placeholder="E-mail"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700"
+            className="input-base"
             required
           />
           <input
@@ -59,25 +74,27 @@ export default function LoginPage() {
             placeholder="Senha"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700"
+            className="input-base"
             required
           />
           {message && (
-            <p className="text-sm text-amber-600 dark:text-amber-400">{message}</p>
+            <p className="text-sm text-amber-600 dark:text-amber-400" role="alert">
+              {message}
+            </p>
           )}
           <div className="flex gap-2">
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-2 rounded-lg bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50"
+              className="btn-primary flex-1"
             >
-              Entrar
+              {loading ? "Entrando…" : "Entrar"}
             </button>
             <button
               type="button"
               onClick={signUp}
               disabled={loading}
-              className="flex-1 py-2 rounded-lg border border-teal-600 text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-950 disabled:opacity-50"
+              className="flex-1 py-2.5 rounded-[var(--radius-sm)] border-2 border-[var(--accent)] text-[var(--accent)] font-medium text-sm hover:bg-[var(--accent)]/10 transition-colors disabled:opacity-50"
             >
               Cadastrar
             </button>

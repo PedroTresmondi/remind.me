@@ -63,6 +63,13 @@ export default async function TaskDetailPage({
     };
   });
 
+  const { data: reminders } = await supabase
+    .from("reminders")
+    .select("id, trigger_at, status")
+    .eq("entity_type", "task")
+    .eq("entity_id", id)
+    .order("trigger_at", { ascending: true });
+
   return (
     <div className="max-w-2xl mx-auto">
       <Link href="/dashboard" className="text-sm text-teal-600 mb-2 inline-block">
@@ -72,6 +79,7 @@ export default async function TaskDetailPage({
         task={{ ...task, task_items: items }}
         repos={repos ?? []}
         existingRules={existingRules}
+        reminders={reminders ?? []}
       />
     </div>
   );

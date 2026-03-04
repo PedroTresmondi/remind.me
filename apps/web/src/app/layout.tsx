@@ -1,6 +1,14 @@
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { RegisterSW } from "@/pwa/RegisterSW";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-sans",
+});
 
 export const metadata: Metadata = {
   title: "Remind.me",
@@ -23,10 +31,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
-      <body className="antialiased min-h-screen">
-        <RegisterSW />
-        {children}
+    <html lang="pt-BR" className={inter.variable} suppressHydrationWarning>
+      <body className="min-h-screen bg-[var(--background)] font-sans antialiased text-[var(--foreground)]">
+        <ThemeProvider>
+          <RegisterSW />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

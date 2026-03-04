@@ -1,5 +1,11 @@
 /* eslint-disable no-restricted-globals */
-self.addEventListener("push", (event: PushEvent) => {
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
+self.addEventListener("push", (event) => {
   if (!event.data) return;
   const data = event.data.json();
   const title = data?.title ?? "Remind.me";
@@ -13,7 +19,7 @@ self.addEventListener("push", (event: PushEvent) => {
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
-self.addEventListener("notificationclick", (event: NotificationEvent) => {
+self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = event.notification.data?.url ?? "/dashboard";
   event.waitUntil(

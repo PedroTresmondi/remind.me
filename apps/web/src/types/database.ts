@@ -26,8 +26,10 @@ export interface Task {
   description: string | null;
   status: AppTaskStatus;
   priority: AppPriority;
+  starts_at: string | null;
   due_at: string | null;
   completed_at: string | null;
+  pinned_at: string | null;
   source_text: string | null;
   parsed_datetime_confidence: number | null;
   created_at: string;
@@ -140,6 +142,6 @@ export interface GithubMatch {
 export type ProjectInsert = Omit<Project, "id" | "created_at" | "updated_at"> &
   Partial<Pick<Project, "id" | "created_at" | "updated_at">>;
 export type TaskInsert = Omit<Task, "id" | "created_at" | "updated_at"> &
-  Partial<Pick<Task, "id" | "created_at" | "updated_at" | "completed_at" | "source_text" | "parsed_datetime_confidence">>;
+  Partial<Pick<Task, "id" | "created_at" | "updated_at" | "completed_at" | "source_text" | "parsed_datetime_confidence" | "starts_at" | "pinned_at">>;
 export type TaskItemInsert = Omit<TaskItem, "id" | "created_at"> &
   Partial<Pick<TaskItem, "id" | "normalized_title" | "created_at">>;

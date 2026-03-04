@@ -36,9 +36,18 @@ Deno.serve(async () => {
       .eq("user_id", rem.user_id)
       .eq("is_active", true);
 
+    let bodyTitle = "Lembrete";
+    if (rem.entity_type === "task") {
+      const { data: task } = await supabase.from("tasks").select("title").eq("id", rem.entity_id).single();
+      if (task?.title) bodyTitle = task.title;
+    } else if (rem.entity_type === "event") {
+      const { data: evt } = await supabase.from("events").select("title").eq("id", rem.entity_id).single();
+      if (evt?.title) bodyTitle = evt.title;
+    }
+
     const payload = JSON.stringify({
-      title: "Lembrete",
-      body: `Lembrete agendado para ${new Date(rem.trigger_at).toLocaleString("pt-BR")}`,
+      title: "Remind.me",
+      body: `${bodyTitle} — ${new Date(rem.trigger_at).toLocaleString("pt-BR")}`,
       tag: rem.id,
       url: "/dashboard/tasks/" + rem.entity_id,
     });
