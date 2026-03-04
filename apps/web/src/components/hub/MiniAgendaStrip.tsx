@@ -52,14 +52,21 @@ export function MiniAgendaStrip({
     end.setDate(end.getDate() + 7);
     end.setHours(23, 59, 59, 999);
 
-    supabase
-      .from("events")
-      .select("id, title, starts_at, ends_at, location")
-      .gte("starts_at", start.toISOString())
-      .lte("starts_at", end.toISOString())
-      .order("starts_at")
-      .then(({ data }) => setEvents((data ?? []) as EventRow[]))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("events")
+          .select("id, title, starts_at, ends_at, location")
+          .gte("starts_at", start.toISOString())
+          .lte("starts_at", end.toISOString())
+          .order("starts_at");
+        if (!cancelled) setEvents((data ?? []) as EventRow[]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const today = new Date();

@@ -2,14 +2,37 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 
-declare global {
-  interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
-  }
+/** Web Speech API event types (not always in TS lib). */
+interface SpeechRecognitionEvent {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
 }
 
-type SpeechRecognition = InstanceType<typeof window.SpeechRecognition>;
+interface SpeechRecognitionErrorEvent {
+  error: string;
+}
+
+/** Minimal type for Web Speech API recognition instance (not on globalThis in all TS configs). */
+interface SpeechRecognitionInstance {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onstart: (() => void) | null;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onend: (() => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  start(): void;
+  stop(): void;
+  abort(): void;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognitionInstance;
+    webkitSpeechRecognition: new () => SpeechRecognitionInstance;
+  }
+}
 
 export interface UseSpeechToTextOptions {
   language?: string;
@@ -29,7 +52,7 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
   const [isSupported, setIsSupported] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const transcriptRef = useRef<string>("");
 
   useEffect(() => {
@@ -64,7 +87,7 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
       recognitionRef.current = null;
     }
 
-    const recognition = new SpeechRecognitionAPI() as SpeechRecognition;
+    const recognition = new SpeechRecognitionAPI() as SpeechRecognitionInstance;
     recognition.lang = language;
     recognition.continuous = continuous;
     recognition.interimResults = true;

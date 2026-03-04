@@ -25,11 +25,11 @@ export function suggestQuickAddType(text: string): "task" | "event" {
  */
 export function parseProjectFromText(text: string): { projectSlug: string | null; titleWithoutProject: string } {
   const t = text.trim();
-  const hashMatch = t.match(/^#(\S+)\s+(.+)$/s);
+  const hashMatch = t.match(/^#(\S+)\s+([\s\S]+)$/);
   if (hashMatch) {
     return { projectSlug: hashMatch[1].toLowerCase(), titleWithoutProject: hashMatch[2].trim() };
   }
-  const colonMatch = t.match(/^([^:]+):\s*(.+)$/s);
+  const colonMatch = t.match(/^([^:]+):\s*([\s\S]+)$/);
   if (colonMatch) {
     const slug = colonMatch[1].trim().toLowerCase().replace(/\s+/g, "-");
     const rest = colonMatch[2].trim();
