@@ -8,7 +8,7 @@ type TaskRow = {
   title: string;
   status: string;
   due_at: string | null;
-  pinned_at: string | null;
+  pinned_at?: string | null;
   project: { id: string; name: string; color: string } | null;
 };
 
