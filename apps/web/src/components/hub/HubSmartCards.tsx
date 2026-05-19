@@ -1,7 +1,11 @@
 "use client";
 
-import type { ListKey } from "@/components/dashboard/DashboardLists";
-import { getTasksByList } from "@/components/dashboard/DashboardLists";
+import type { AgendaEventRow, ListKey } from "@/components/dashboard/DashboardLists";
+import {
+  getProgramadoCount,
+  getProgramadoPreview,
+  getTasksByList,
+} from "@/components/dashboard/DashboardLists";
 
 type TaskRow = {
   id: string;
@@ -15,7 +19,10 @@ type TaskRow = {
 
 const LIST_CONFIG: Record<ListKey, { label: string; emptyHint: string }> = {
   hoje: { label: "Hoje", emptyHint: "Sem tarefas hoje. Adicione uma entrega ou lembrete acima." },
-  programado: { label: "Programado", emptyHint: "Nenhuma tarefa com data futura. Use o campo acima para agendar." },
+  programado: {
+    label: "Programado",
+    emptyHint: "Nenhuma tarefa ou evento com data futura. Use o campo acima para agendar.",
+  },
   todos: { label: "Todos", emptyHint: "Nenhuma pendência. Capture algo no Quick Add." },
   atrasados: { label: "Atrasados", emptyHint: "Tudo em dia. Boa." },
   inbox: { label: "Inbox", emptyHint: "Caixa vazia. Capture ideias no campo acima." },
@@ -25,24 +32,34 @@ const LIST_CONFIG: Record<ListKey, { label: string; emptyHint: string }> = {
 
 export function HubSmartCards({
   tasks,
+  events = [],
   activeList,
   onSelectList,
   onOpenProjects,
 }: {
   tasks: TaskRow[];
+  events?: AgendaEventRow[];
   activeList: ListKey | null;
   onSelectList: (key: ListKey) => void;
   onOpenProjects: () => void;
 }) {
   const byList = getTasksByList(tasks);
+  const programadoCount = getProgramadoCount(tasks, events);
+  const programadoPreview = getProgramadoPreview(tasks, events, 2);
 
   return (
     <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
       {(Object.keys(LIST_CONFIG) as ListKey[]).map((key) => {
         const items = byList[key] ?? [];
         const { label, emptyHint } = LIST_CONFIG[key];
-        const count = items.length;
-        const preview = items.slice(0, 2);
+        const count = key === "programado" ? programadoCount : items.length;
+        const preview =
+          key === "programado"
+            ? programadoPreview.map((p) => ({
+                id: `${p.kind}-${p.id}`,
+                title: p.kind === "event" ? `${p.title} (evento)` : p.title,
+              }))
+            : items.slice(0, 2).map((t) => ({ id: t.id, title: t.title }));
         const isActive = activeList === key;
         return (
           <button

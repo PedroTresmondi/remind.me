@@ -5,8 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
-import type { ListKey } from "@/components/dashboard/DashboardLists";
+import type { AgendaEventRow, ListKey } from "@/components/dashboard/DashboardLists";
+import { getProgramadoEvents } from "@/components/dashboard/DashboardLists";
 import { InboxTriageView } from "@/components/tasks/InboxTriageView";
+import {
+  isScheduledAfterToday,
+  isScheduledBeforeToday,
+  isScheduledToday,
+} from "@/lib/agenda-bounds";
 
 type TaskRow = {
   id: string;
@@ -31,7 +37,10 @@ const LIST_LABELS: Record<ListKey, string> = {
 
 const EMPTY_STATES: Record<ListKey, { title: string; description: string }> = {
   hoje: { title: "Nada para hoje", description: "Adicione uma tarefa com data de hoje no campo acima ou escolha outra vista." },
-  programado: { title: "Nenhuma tarefa programada", description: "Tarefas com data futura aparecem aqui. Adicione prazos nas tarefas." },
+  programado: {
+    title: "Nada programado",
+    description: "Tarefas e eventos com data futura aparecem aqui. Use o Quick Add acima.",
+  },
   todos: { title: "Nenhuma pendência", description: "Todas as tarefas estão concluídas ou não há tarefas ainda." },
   atrasados: { title: "Nada em atraso", description: "Ótimo! Não há tarefas vencidas no momento." },
   inbox: { title: "Inbox vazio", description: "Tarefas sem projeto aparecem aqui. Adicione algo pelo Quick Add." },
@@ -40,20 +49,18 @@ const EMPTY_STATES: Record<ListKey, { title: string; description: string }> = {
 };
 
 function filterTasks(tasks: TaskRow[], list: ListKey): TaskRow[] {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const endToday = new Date(today);
-  endToday.setHours(23, 59, 59, 999);
   if (list === "todos") return tasks.filter((t) => t.status === "pending");
   if (list === "concluidos") return tasks.filter((t) => t.status === "done");
   if (list === "inbox") return tasks.filter((t) => t.status === "pending" && !t.project_id);
   if (list === "sem_data") return tasks.filter((t) => t.status === "pending" && !t.due_at);
-  if (list === "atrasados") return tasks.filter((t) => t.status === "pending" && t.due_at && new Date(t.due_at) < today);
-  if (list === "hoje") return tasks.filter((t) => t.status === "pending" && t.due_at).filter((t) => {
-    const d = new Date(t.due_at!);
-    return d >= today && d <= endToday;
-  });
-  if (list === "programado") return tasks.filter((t) => t.status === "pending" && t.due_at).filter((t) => new Date(t.due_at!) > endToday);
+  if (list === "atrasados")
+    return tasks.filter((t) => t.status === "pending" && t.due_at && isScheduledBeforeToday(t.due_at));
+  if (list === "hoje")
+    return tasks.filter((t) => t.status === "pending" && t.due_at && isScheduledToday(t.due_at));
+  if (list === "programado")
+    return tasks.filter(
+      (t) => t.status === "pending" && t.due_at && isScheduledAfterToday(t.due_at)
+    );
   return tasks;
 }
 
@@ -96,12 +103,14 @@ const SWIPE_THRESHOLD = 60;
 
 export function TaskListWithActions({
   tasks,
+  events = [],
   list,
   onTaskClick,
   onPinToggle,
   hideTitle,
 }: {
   tasks: TaskRow[];
+  events?: AgendaEventRow[];
   list: ListKey | null;
   onTaskClick?: (taskId: string) => void;
   onPinToggle?: (taskId: string, pinned: boolean) => void;
@@ -124,6 +133,9 @@ export function TaskListWithActions({
     return new Date(a.due_at).getTime() - new Date(b.due_at).getTime();
   });
   const groupedProgramado = list === "programado" ? groupProgramado(sorted) : null;
+  const programadoEvents = list === "programado" ? getProgramadoEvents(events) : [];
+  const hasProgramadoContent =
+    list === "programado" && (sorted.length > 0 || programadoEvents.length > 0);
 
   const supabase = createClient();
 
@@ -396,18 +408,56 @@ export function TaskListWithActions({
           onTaskClick={(id) => onTaskClick?.(id)}
           onDone={() => router.refresh()}
         />
-      ) : groupedProgramado ? (
-        <div className="space-y-0 rounded-[var(--radius)] border border-[var(--card-border)] overflow-hidden bg-[var(--card)]">
-          {groupedProgramado.map((g, idx) => (
-            <div key={g.label}>
-              <h2 className={`sticky top-14 z-10 bg-[var(--card)] py-2 px-4 text-xs font-semibold uppercase tracking-wide text-[var(--muted)] border-b border-[var(--card-border)] ${idx === 0 ? "rounded-t-[var(--radius)]" : ""}`}>
-                {g.label}
+      ) : list === "programado" && hasProgramadoContent ? (
+        <div className="space-y-4">
+          {programadoEvents.length > 0 && (
+            <div className="rounded-[var(--radius)] border border-[var(--card-border)] overflow-hidden bg-[var(--card)]">
+              <h2 className="py-2 px-4 text-xs font-semibold uppercase tracking-wide text-[var(--muted)] border-b border-[var(--card-border)]">
+                Eventos
               </h2>
               <ul className="divide-y divide-[var(--card-border)]">
-                {g.tasks.map(renderRow)}
+                {programadoEvents.map((e) => {
+                  const dateKey = e.starts_at.slice(0, 10);
+                  return (
+                    <li key={e.id}>
+                      <Link
+                        href={`/dashboard/calendar?date=${dateKey}`}
+                        className="flex items-center gap-3 py-3 px-4 hover:bg-[var(--muted)]/10 transition-colors"
+                      >
+                        <span className="w-2 h-2 rounded-full shrink-0 bg-blue-500" title="Evento" />
+                        <span className="text-sm text-[var(--foreground)] truncate flex-1">{e.title}</span>
+                        <span className="text-xs text-[var(--muted)] shrink-0">
+                          {new Date(e.starts_at).toLocaleString("pt-BR", {
+                            weekday: "short",
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
-          ))}
+          )}
+          {groupedProgramado && groupedProgramado.length > 0 && (
+            <div className="space-y-0 rounded-[var(--radius)] border border-[var(--card-border)] overflow-hidden bg-[var(--card)]">
+              {groupedProgramado.map((g, idx) => (
+                <div key={g.label}>
+                  <h2
+                    className={`py-2 px-4 text-xs font-semibold uppercase tracking-wide text-[var(--muted)] border-b border-[var(--card-border)] ${idx === 0 && programadoEvents.length === 0 ? "rounded-t-[var(--radius)]" : ""}`}
+                  >
+                    {g.label} — tarefas
+                  </h2>
+                  <ul className="divide-y divide-[var(--card-border)]">
+                    {g.tasks.map(renderRow)}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       ) : (
         <ul className="card rounded-[var(--radius)] overflow-hidden divide-y divide-[var(--card-border)]">

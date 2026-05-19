@@ -9,6 +9,8 @@ import { TaskListWithActions } from "@/components/tasks/TaskListWithActions";
 import { TaskDetailDrawer } from "@/components/hub/TaskDetailDrawer";
 import { ProjectsDrawer } from "@/components/hub/ProjectsDrawer";
 import { MiniAgendaStrip } from "@/components/hub/MiniAgendaStrip";
+import type { AgendaEventRow } from "@/components/dashboard/DashboardLists";
+import { createClient } from "@/lib/supabase/client";
 import { Top3Block, usePinUnpin } from "@/components/hub/Top3Block";
 import { Fab } from "@/components/hub/Fab";
 import { Sheet } from "@/components/ui/Sheet";
@@ -66,10 +68,35 @@ export function HubView({ initialTasks }: { initialTasks: TaskRow[] }) {
   const [addSheetReminder, setAddSheetReminder] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [upcomingEvents, setUpcomingEvents] = useState<AgendaEventRow[]>([]);
+
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchQuery.trim()), 280);
     return () => clearTimeout(t);
   }, [searchQuery]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const end = new Date(start);
+    end.setDate(end.getDate() + 365);
+    end.setHours(23, 59, 59, 999);
+
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("events")
+        .select("id, title, starts_at, ends_at")
+        .gte("starts_at", start.toISOString())
+        .lte("starts_at", end.toISOString())
+        .order("starts_at");
+      if (!cancelled) setUpcomingEvents((data ?? []) as AgendaEventRow[]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialTasks]);
 
   const tasksFiltered = useMemo(() => {
     if (!debouncedSearch) return initialTasks;
@@ -175,6 +202,7 @@ export function HubView({ initialTasks }: { initialTasks: TaskRow[] }) {
       <section className="mb-4">
         <HubSmartCards
           tasks={initialTasks}
+          events={upcomingEvents}
           activeList={activeList}
           onSelectList={setActiveList}
           onOpenProjects={() => setProjectsDrawerOpen(true)}
@@ -197,7 +225,11 @@ export function HubView({ initialTasks }: { initialTasks: TaskRow[] }) {
 
       {/* Mini agenda: próximos dias com tarefas e eventos, clique abre drawer */}
       <section className="mb-6">
-        <MiniAgendaStrip tasks={initialTasks} onTaskClick={setSelectedTaskId} />
+        <MiniAgendaStrip
+          tasks={initialTasks}
+          events={upcomingEvents}
+          onTaskClick={setSelectedTaskId}
+        />
       </section>
 
       {/* Vista ativa: dynamic list com animação na troca */}
@@ -206,6 +238,7 @@ export function HubView({ initialTasks }: { initialTasks: TaskRow[] }) {
         <div key={effectiveList} className="hub-vista-in">
           <TaskListWithActions
             tasks={tasksFiltered}
+            events={upcomingEvents}
             list={effectiveList}
             onTaskClick={setSelectedTaskId}
             onPinToggle={(id, pinned) => setPinned(id, pinned)}

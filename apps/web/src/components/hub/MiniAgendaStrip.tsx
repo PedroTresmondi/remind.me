@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import type { AgendaEventRow } from "@/components/dashboard/DashboardLists";
 
 const DAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -36,15 +37,21 @@ function getDayLabel(date: Date, index: number): string {
 
 export function MiniAgendaStrip({
   tasks,
+  events: eventsProp,
   onTaskClick,
 }: {
   tasks: TaskRow[];
+  events?: AgendaEventRow[];
   onTaskClick: (taskId: string) => void;
 }) {
-  const [events, setEvents] = useState<EventRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [fetchedEvents, setFetchedEvents] = useState<EventRow[]>([]);
+  const [loading, setLoading] = useState(eventsProp === undefined);
 
   useEffect(() => {
+    if (eventsProp !== undefined) {
+      setLoading(false);
+      return;
+    }
     const supabase = createClient();
     const today = new Date();
     const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -61,13 +68,15 @@ export function MiniAgendaStrip({
           .gte("starts_at", start.toISOString())
           .lte("starts_at", end.toISOString())
           .order("starts_at");
-        if (!cancelled) setEvents((data ?? []) as EventRow[]);
+        if (!cancelled) setFetchedEvents((data ?? []) as EventRow[]);
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [eventsProp]);
+
+  const events = (eventsProp ?? fetchedEvents) as EventRow[];
 
   const today = new Date();
   const startToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
