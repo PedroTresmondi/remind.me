@@ -19,7 +19,7 @@ export default function LoginPage() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        setMessage(error.message);
+        setMessage(translateAuthError(error.message));
         setLoading(false);
         return;
       }
@@ -39,7 +39,7 @@ export default function LoginPage() {
     try {
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) {
-        setMessage(error.message);
+        setMessage(translateAuthError(error.message));
         setLoading(false);
         return;
       }
@@ -48,6 +48,25 @@ export default function LoginPage() {
     } catch (err) {
       setLoading(false);
       setMessage(err instanceof Error ? err.message : "Erro ao cadastrar. Tente de novo.");
+    }
+  }
+
+  async function signInAsGuest() {
+    setLoading(true);
+    setMessage("");
+    try {
+      const { error } = await supabase.auth.signInAnonymously();
+      if (error) {
+        setMessage(translateAuthError(error.message));
+        setLoading(false);
+        return;
+      }
+      setLoading(false);
+      router.refresh();
+      window.location.href = "/dashboard";
+    } catch (err) {
+      setLoading(false);
+      setMessage(err instanceof Error ? err.message : "Erro ao entrar. Tente de novo.");
     }
   }
 
@@ -100,7 +119,35 @@ export default function LoginPage() {
             </button>
           </div>
         </form>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center" aria-hidden>
+            <div className="w-full border-t border-[var(--card-border)]" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-[var(--card)] px-2 text-[var(--muted)]">ou</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={signInAsGuest}
+          disabled={loading}
+          className="w-full py-2.5 rounded-[var(--radius-sm)] border border-[var(--card-border)] text-[var(--foreground)] font-medium text-sm hover:bg-[var(--muted)]/10 transition-colors disabled:opacity-50"
+        >
+          {loading ? "Entrando…" : "Entrar sem cadastro"}
+        </button>
+        <p className="text-xs text-center text-[var(--muted)]">
+          Conta temporária neste aparelho. Para usar em outro dispositivo, cadastre-se com e-mail.
+        </p>
       </div>
     </main>
   );
+}
+
+function translateAuthError(message: string): string {
+  if (message.includes("Anonymous sign-ins are disabled")) {
+    return "Login sem cadastro desativado no Supabase. Em Authentication → Providers, habilite Anonymous.";
+  }
+  return message;
 }

@@ -1,0 +1,51 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: remindme-api
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: remindme
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/remindme
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - remindme-net
+    restart: unless-stopped
+
+  db:
+    image: postgres:16
+    container_name: remindme-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: remindme
+    ports:
+      - "5432:5432"
+    volumes:
+      - remindme_postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d remindme"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - remindme-net
+    restart: unless-stopped
+
+networks:
+  remindme-net:
+    driver: bridge
+
+volumes:
+  remindme_postgres_data:

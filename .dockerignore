@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+apps/web/.next
+apps/web/out
+.git
+.gitignore
+.env
+.env.local
+**/.env.local
+*.md
+!README_DOCKER.md
+supabase/.temp
+.cursor
+.vscode
+**/*.log
+coverage
+dist

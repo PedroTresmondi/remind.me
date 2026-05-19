@@ -1,0 +1,19 @@
+{
+  "name": "remindme-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API Remind.me para Docker / PostgreSQL local",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "pg": "^8.13.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

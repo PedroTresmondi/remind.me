@@ -1,0 +1,63 @@
+apiVersion: "2021-10-01"
+location: eastus
+name: aci-remindme-cp3
+properties:
+  containers:
+    - name: remindme-api
+      properties:
+        image: acrremindmecp3.azurecr.io/remindme-api:v1
+        ports:
+          - port: 3000
+            protocol: TCP
+        environmentVariables:
+          - name: PORT
+            value: "3000"
+          - name: DB_HOST
+            value: "localhost"
+          - name: DB_PORT
+            value: "5432"
+          - name: DB_USER
+            value: "postgres"
+          - name: DB_PASSWORD
+            value: "postgres"
+          - name: DB_NAME
+            value: "remindme"
+          - name: DATABASE_URL
+            value: "postgresql://postgres:postgres@localhost:5432/remindme"
+        resources:
+          requests:
+            cpu: 1
+            memoryInGB: 1
+
+    - name: remindme-db
+      properties:
+        image: acrremindmecp3.azurecr.io/postgres:16
+        ports:
+          - port: 5432
+            protocol: TCP
+        environmentVariables:
+          - name: POSTGRES_USER
+            value: "postgres"
+          - name: POSTGRES_PASSWORD
+            value: "postgres"
+          - name: POSTGRES_DB
+            value: "remindme"
+        resources:
+          requests:
+            cpu: 1
+            memoryInGB: 1
+
+  imageRegistryCredentials:
+    - server: acrremindmecp3.azurecr.io
+      username: acrremindmecp3
+      password: 2HjUcrZ9skvu2SIMiPpk6QT7LmSX6TuhN8Utl4skq9EqIV3JGmrvJQQJ99CEACYeBjFEqg7NAAACAZCRezwv
+
+  ipAddress:
+    type: Public
+    ports:
+      - protocol: TCP
+        port: 3000
+
+  osType: Linux
+  restartPolicy: Always
+type: Microsoft.ContainerInstance/containerGroups
